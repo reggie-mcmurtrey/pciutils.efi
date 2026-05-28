@@ -12,6 +12,8 @@
 #define PCI_PATH_IDS_DIR "."
 #define PCI_HAVE_STDINT_H
 #define PCI_HAVE_PM_INTEL_CONF
+#define PCI_HAVE_64BIT_ADDRESS
+#define PCI_HAVE_PM_ECAM
 
 //BUGBUG: A crude ugly smelly patch.
 #undef stderr

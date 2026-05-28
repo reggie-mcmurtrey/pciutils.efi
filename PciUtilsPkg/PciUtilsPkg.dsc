@@ -35,7 +35,9 @@
 
   RegisterFilterLib|MdePkg/Library/RegisterFilterLibNull/RegisterFilterLibNull.inf
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
-  
+
+  StackCheckLib|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
+
 [Components]
   PciUtilsPkg/lspci.inf
   PciUtilsPkg/setpci.inf

@@ -33,6 +33,7 @@
 # pciutils/lib/proc.c
 # pciutils/lib/sylixos-device.c
 # pciutils/lib/sysfs.c
+  sys/ecam.c
 
 [Packages]
   MdePkg/MdePkg.dec
