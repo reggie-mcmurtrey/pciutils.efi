@@ -8,7 +8,7 @@
 
 #define PCI_IDS "pci.ids"
 #define PCI_OS_GNU
-#define PCILIB_VERSION "3.6.2"
+#define PCILIB_VERSION "3.15.0"
 #define PCI_PATH_IDS_DIR "."
 #define PCI_HAVE_STDINT_H
 #define PCI_HAVE_PM_INTEL_CONF
