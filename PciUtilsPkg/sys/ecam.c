@@ -38,7 +38,7 @@ static int ecam_detect(struct pci_access *a)
   );
   if (EFI_ERROR(Status))
   {
-    a->error("LocateHandleBuffer");
+    a->error("LocateHandleBuffer: 0x%016llX\n", (UINT64)Status);
     pci_mfree(eacc);
     a->backend_data = NULL;
     return 0;
@@ -56,153 +56,76 @@ static void ecam_init(struct pci_access *a)
 static void ecam_cleanup(struct pci_access *a)
 {
   struct uefi_ecam_access *eacc = a->backend_data;
+  
+  if (!eacc) {
+    return;
+  }
+
   if(eacc->HandleBuffer != NULL) {
     gBS->FreePool(eacc->HandleBuffer);
   }
-  if(eacc != NULL) {
-    pci_mfree(eacc);
-  }
-}
 
-static UINT8 ecam_read8(struct pci_dev *d, INT32 offset)
-{
-    EFI_STATUS Status;
-    EFI_PCI_IO_PROTOCOL *PciIo;
-    UINT8 Data = 0xFF;
-
-    PciIo = d->backend_data;
-    if(PciIo != NULL) {
-      Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, offset, 1, &Data);
-      if (EFI_ERROR (Status)) {
-        d->access->error("PciIo Read Error: 0x%016llX\n", Status);
-      }
-    }
-
-    return Data;
-}
-
-static UINT16 ecam_read16(struct pci_dev *d, INT32 offset)
-{
-    EFI_STATUS Status;
-    EFI_PCI_IO_PROTOCOL *PciIo;
-    UINT16 Data = 0xFFFF;
-
-    PciIo = d->backend_data;
-    if(PciIo != NULL) {
-      Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, offset, 1, &Data);
-      if (EFI_ERROR (Status)) {
-        d->access->error("PciIo Read Error: 0x%016llX\n", Status);
-      }
-    }
-
-    return Data;
-}
-
-static UINT32 ecam_read32(struct pci_dev *d, INT32 offset)
-{
-    EFI_STATUS Status;
-    EFI_PCI_IO_PROTOCOL *PciIo;
-    UINT32 Data = 0xFFFFFFFF;
-
-    PciIo = d->backend_data;
-    if(PciIo != NULL) {
-      Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint32, offset, 1, &Data);
-      if (EFI_ERROR (Status)) {
-        d->access->error("PciIo Read Error: 0x%016llX\n", Status);
-      }
-    }
-
-    return Data;
+  pci_mfree(eacc);
 }
 
 static int ecam_read(struct pci_dev *d, int pos, byte *buf, int len)
 {
-  if (pos >= 4096)
-    return 0;
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo;
 
-  if (len != 1 && len != 2 && len != 4)
-    return pci_generic_block_read(d, pos, buf, len);
+    if (pos >= 4096) {
+      d->access->error("pos >= 4096\n");
+      return 0;
+    }
 
-  switch (len)
-    {
-    case 1:
-      buf[0] = ecam_read8(d, pos);
-      break;
-    case 2:
-      ((u16 *) buf)[0] = ecam_read16(d, pos);
-      break;
-    case 4:
-      ((u32 *) buf)[0] = ecam_read32(d, pos);
-      break;
+    if (buf == NULL) {
+      d->access->error("buf == NULL\n");
+      return 0;
+    }
+
+    PciIo = d->backend_data;
+    if(PciIo == NULL) {
+      d->access->error("PciIo == NULL\n");
+      return 0;
+    }
+
+    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, pos, len, buf);
+    if (EFI_ERROR (Status)) {
+      d->access->error("PciIo Read Error: 0x%016llX\n", (UINT64)Status);
+      return 0;
     }
 
     return 1;
 }
 
-static void ecam_write8(struct pci_dev *d, INT32 offset, UINT8 data)
-{
-    EFI_STATUS Status;
-    EFI_PCI_IO_PROTOCOL *PciIo;
-
-    PciIo = d->backend_data;
-    if(PciIo != NULL) {
-      Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint8, offset, 1, &data);
-      if (EFI_ERROR (Status)) {
-        d->access->error("PciIo Write Error: 0x%016llX\n", Status);
-      }
-    }
-}
-
-static void ecam_write16(struct pci_dev *d, INT32 offset, UINT16 data)
-{
-    EFI_STATUS Status;
-    EFI_PCI_IO_PROTOCOL *PciIo;
-
-    PciIo = d->backend_data;
-    if(PciIo != NULL) {
-      Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint16, offset, 1, &data);
-      if (EFI_ERROR (Status)) {
-        d->access->error("PciIo Write Error: 0x%016llX\n", Status);
-      }
-    }
-}
-
-static void ecam_write32(struct pci_dev *d, INT32 offset, UINT32 data)
-{
-    EFI_STATUS Status;
-    EFI_PCI_IO_PROTOCOL *PciIo;
-
-    PciIo = d->backend_data;
-    if(PciIo != NULL) {
-      Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint32, offset, 1, &data);
-      if (EFI_ERROR (Status)) {
-        d->access->error("PciIo Write Error: 0x%016llX\n", Status);
-      }
-    }
-}
-
 static int ecam_write(struct pci_dev *d, int pos, byte *buf, int len)
 {
-  if (pos >= 4096)
-    return 0;
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo;
 
-  if (len != 1 && len != 2 && len != 4)
-    return pci_generic_block_write(d, pos, buf, len);
-
-  switch (len)
-    {
-    case 1:
-      ecam_write8(d, pos, buf[0]);
-      break;
-    case 2:
-      ecam_write16(d, pos, ((u16 *) buf)[0]);
-      break;
-    case 4:
-      ecam_write32(d, pos, ((u32 *) buf)[0]);
-      break;
+    if (pos >= 4096) {
+      d->access->error("pos >= 4096\n");
+      return 0;
     }
 
-  return 1;
+    if (buf == NULL) {
+      d->access->error("buf == NULL\n");
+      return 0;
+    }
+
+    PciIo = d->backend_data;
+    if(PciIo == NULL) {
+      d->access->error("PciIo == NULL\n");
+      return 0;
+    }
+
+    Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint8, pos, len, buf);
+    if (EFI_ERROR (Status)) {
+      d->access->error("PciIo Write Error: 0x%016llX\n", (UINT64)Status);
+      return 0;
+    }
+
+    return 1;
 }
 
 static void ecam_scan(struct pci_access *a)
@@ -238,15 +161,16 @@ static void ecam_scan(struct pci_access *a)
         d->func = uefiFunc;
         d->known_fields = PCI_FILL_IDENT;
         d->backend_data = PciIo;
-        d->vendor_id = ecam_read16(d, PCI_VENDOR_ID);
-        d->device_id = ecam_read16(d, PCI_DEVICE_ID);
-        d->hdrtype = ecam_read8(d, PCI_HEADER_TYPE) & 0x7F;
+        d->vendor_id = VID;
+        ecam_read(d, PCI_DEVICE_ID, (UINT8*)&d->device_id, 2);
+        ecam_read(d, PCI_HEADER_TYPE, (UINT8*)&d->hdrtype, 1);
+        d->hdrtype &= 0x7F;
         pci_link_dev(a, d);
       } else {
-        a->debug("Skipping %04llX:%02llX:%02llX.%lld - Invalid Vender ID: 0x%04X\n", uefiDomain, uefiBus, uefiDev, uefiFunc, VID);
+        a->debug("Skipping %04llX:%02llX:%02llX.%lld - Invalid Vendor ID: 0x%04X\n", (UINT64)uefiDomain, (UINT64)uefiBus, (UINT64)uefiDev, (UINT64)uefiFunc, VID);
       }
     } else {
-      a->error("OpenProtocol: 0x%016llX\n", Status);
+      a->error("OpenProtocol: 0x%016llX\n", (UINT64)Status);
     }
   }
 }
